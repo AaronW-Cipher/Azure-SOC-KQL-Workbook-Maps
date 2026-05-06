@@ -1,58 +1,57 @@
-# Azure SOC KQL Workbook Maps
+# Azure SOC Detection Lab – KQL Workbook Maps
 
-This project demonstrates hands-on experience building **SOC-relevant detections and visualizations** using KQL in Azure Monitor / Log Analytics.
+This project demonstrates hands-on SOC analyst capabilities by building and visualizing security detections using KQL in Azure Monitor / Log Analytics.
 
-The goal is to simulate real-world SOC workflows by identifying suspicious activity across:
-- Identity (Entra ID)
-- Endpoint (VM authentication)
-- Network (malicious traffic)
-- Cloud (Azure resource activity)
+The focus is on identifying real-world attack patterns across identity, endpoint, network, and cloud activity.
 
 ---
 
-## 🔧 Skills Demonstrated
+## 🚨 Key Outcomes
 
-- KQL Query Development
+- Built 5 SOC-relevant detections using real Azure log sources
+- Applied geolocation enrichment to identify attack origins
+- Visualized security events using Azure Workbook maps
+- Simulated real SOC investigation workflows and triage thinking
+
+---
+
+## 🧠 Skills Demonstrated
+
+- KQL (Kusto Query Language)
 - SIEM Log Analysis (Azure Monitor / Log Analytics)
-- Identity Threat Detection (Entra ID Sign-in Logs)
-- Network Threat Detection (Azure Network Analytics)
-- Endpoint Monitoring (DeviceLogonEvents)
+- Threat Detection & Investigation
+- Identity Security Monitoring (Entra ID)
+- Endpoint Monitoring (VM Authentication)
+- Network Threat Analysis
 - Cloud Activity Monitoring (AzureActivity)
-- GeoIP Enrichment & Threat Visualization
-- Security Investigation & Detection Mindset
+- GeoIP Enrichment & Data Visualization
 
 ---
 
-## 🧠 Data Sources Used
+## 📊 Data Sources
 
-- `SigninLogs` (Entra ID Authentication)
-- `AzureActivity` (Cloud Resource Activity)
-- `DeviceLogonEvents` (VM Authentication)
-- `AzureNetworkAnalytics_CL` (Network Traffic)
-- GeoIP Watchlist (`_GetWatchlist("geoip")`)
+- `SigninLogs` – Entra ID authentication events  
+- `DeviceLogonEvents` – VM login activity  
+- `AzureActivity` – Cloud resource operations  
+- `AzureNetworkAnalytics_CL` – Network traffic flows  
 
 ---
 
-# 📍 Detection Maps
+# 📍 Detection Use Cases
 
 ---
 
 ## 1. Entra ID Authentication Failures
 
-**Purpose:** Identify failed login attempts across users and geographic locations.
+**Purpose:** Detect brute-force and password spraying attacks
 
-**What It Detects:**
-- Password spraying
-- Brute-force attempts
-- Suspicious foreign login attempts
+**Detection Logic:**
+- Filters failed authentication attempts (`ResultType != 0`)
+- Aggregates login attempts by user and geographic location
 
-**How It Works:**
-- Filters `SigninLogs` where `ResultType != 0`
-- Aggregates failed login attempts by user and location
-- Visualizes activity using geolocation mapping
-
-**SOC Value:**
-Highlights accounts under attack and suspicious login origins.
+**SOC Insight:**
+- Identifies targeted accounts
+- Highlights attack origin locations
 
 ![Login Failures](screenshots/login-failures-map.png)
 
@@ -60,19 +59,15 @@ Highlights accounts under attack and suspicious login origins.
 
 ## 2. Entra ID Authentication Success
 
-**Purpose:** Track successful logins to identify suspicious access.
+**Purpose:** Identify suspicious successful logins
 
-**What It Detects:**
-- Impossible travel scenarios
-- Compromised accounts after failed login attempts
-- High-volume successful logins
+**Detection Logic:**
+- Filters successful authentication (`ResultType == 0`)
+- Maps login activity by user and location
 
-**How It Works:**
-- Filters `SigninLogs` where `ResultType == 0`
-- Aggregates login activity by identity and location
-
-**SOC Value:**
-Used to validate whether attackers successfully gained access.
+**SOC Insight:**
+- Detects potential account compromise
+- Helps validate attacker success after failed attempts
 
 ![Login Success](screenshots/login-success-map.png)
 
@@ -80,93 +75,84 @@ Used to validate whether attackers successfully gained access.
 
 ## 3. VM Authentication Failures
 
-**Purpose:** Monitor failed login attempts to virtual machines.
+**Purpose:** Detect brute-force attempts against virtual machines
 
-**What It Detects:**
-- RDP brute-force attacks
-- SSH brute-force attempts
-- Repeated authentication failures from external IPs
+**Detection Logic:**
+- Queries failed logon attempts from `DeviceLogonEvents`
+- Maps remote IP activity using geolocation enrichment
 
-**How It Works:**
-- Queries `DeviceLogonEvents` for failed logons
-- Enriches IP addresses with GeoIP data
-- Aggregates attempts by source IP and location
-
-**SOC Value:**
-Identifies exposed systems and attack sources targeting VMs.
+**SOC Insight:**
+- Identifies exposed systems
+- Detects repeated login attempts from external sources
 
 ![VM Auth Failures](screenshots/vm-auth-failures-map.png)
 
 ---
 
-## 4. Azure Resource Creation
+## 4. Azure Resource Creation Monitoring
 
-**Purpose:** Track creation of Azure resources across users and locations.
+**Purpose:** Detect unauthorized or suspicious cloud activity
 
-**What It Detects:**
-- Unauthorized resource creation
-- Suspicious cloud activity
-- Potential persistence or crypto-mining setups
+**Detection Logic:**
+- Filters successful `WRITE` operations in `AzureActivity`
+- Tracks resource creation by user and source IP
 
-**How It Works:**
-- Filters `AzureActivity` for successful `WRITE` operations
-- Excludes service principals (GUID-based callers)
-- Maps activity by caller and geolocation
-
-**SOC Value:**
-Helps identify suspicious or unauthorized changes in cloud environments.
+**SOC Insight:**
+- Detects potential persistence mechanisms
+- Identifies abnormal cloud usage patterns
 
 ![Resource Creation](screenshots/resource-creation-map.png)
 
 ---
 
-## 5. Malicious Traffic Entering the Network
+## 5. Malicious Network Traffic Detection
 
-**Purpose:** Visualize inbound malicious network traffic.
+**Purpose:** Identify inbound malicious traffic targeting the environment
 
-**What It Detects:**
-- Known malicious traffic flows
-- Targeted destination ports
-- Suspicious source IP locations
+**Detection Logic:**
+- Filters `MaliciousFlow` traffic from network analytics logs
+- Extracts source/destination IP, ports, and protocol
 
-**How It Works:**
-- Filters `AzureNetworkAnalytics_CL` for `MaliciousFlow`
-- Extracts source/destination IP, port, and protocol
-- Enriches with GeoIP data and maps attack sources
-
-**SOC Value:**
-Provides visibility into external threats targeting the environment.
+**SOC Insight:**
+- Highlights attacker infrastructure
+- Reveals targeted services and exposed ports
 
 ![Malicious Traffic](screenshots/malicious-traffic-map.png)
 
 ---
 
-# 🔍 Analyst Perspective
+# 🔍 SOC Analyst Workflow (How I Investigate)
 
-These detections are designed to answer key SOC questions:
+For each detection, I apply the following process:
 
-- Are accounts being targeted or compromised?
-- Are attackers attempting to access systems?
-- Is malicious traffic reaching the network?
-- Are unauthorized changes happening in the cloud?
-- Did suspicious activity lead to successful access?
+1. Identify anomaly (failed logins, traffic spikes, resource creation)
+2. Analyze source (IP address, geolocation, user identity)
+3. Correlate across logs:
+   - Login failures → login success
+   - Network traffic → VM authentication attempts
+4. Determine risk level:
+   - Low (noise)
+   - Medium (suspicious)
+   - High (potential compromise)
 
 ---
 
-# 🚀 Project Outcome
+# 🚀 Why This Project Matters
 
 This project demonstrates the ability to:
-- Analyze real security logs
-- Build detection logic using KQL
-- Visualize threats for rapid investigation
-- Think like a SOC Analyst in a cloud environment
+
+- Build real detection logic (not just theory)
+- Analyze and interpret security logs
+- Think like a SOC analyst during investigations
+- Translate raw data into actionable security insights
 
 ---
 
 # 📌 Author
 
-**Aaron Welsh**  
-- LinkedIn: https://www.linkedin.com/in/aaronswelsh/  
-- GitHub: https://github.com/AaronW-Cipher  
+**Aaron Welsh**
+
+- LinkedIn: https://www.linkedin.com/in/aaronswelsh/
+- GitHub: https://github.com/AaronW-Cipher
 
 ---
