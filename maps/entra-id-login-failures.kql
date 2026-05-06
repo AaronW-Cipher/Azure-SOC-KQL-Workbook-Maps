@@ -1,0 +1,22 @@
+// Purpose: Visualize failed Entra ID sign-in attempts by identity and geographic location
+// Data Source: SigninLogs
+// Use Case: Detect password spraying, brute-force attempts, and suspicious login failures
+
+SigninLogs
+| where TimeGenerated >= ago(30d)
+| where ResultType != 0 and Identity !contains "-"
+| summarize LoginCount = count() by 
+    Identity,
+    Latitude = tostring(LocationDetails["geoCoordinates"]["latitude"]),
+    Longitude = tostring(LocationDetails["geoCoordinates"]["longitude"]),
+    City = tostring(LocationDetails["city"]),
+    Country = tostring(LocationDetails["countryOrRegion"])
+| order by LoginCount desc
+| project 
+    Identity,
+    Latitude,
+    Longitude,
+    City,
+    Country,
+    LoginCount,
+    friendly_label = strcat(Identity, " - ", City, ", ", Country)
