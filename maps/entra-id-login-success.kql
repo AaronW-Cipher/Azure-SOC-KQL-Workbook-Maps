@@ -1,0 +1,20 @@
+// Purpose: Visualize successful Entra ID sign-ins by identity and geographic location
+// Data Source: SigninLogs
+// Use Case: Identify suspicious successful logins, unusual locations, and possible account compromise
+
+SigninLogs
+| where ResultType == 0
+| summarize LoginCount = count() by 
+    Identity,
+    Latitude = tostring(LocationDetails["geoCoordinates"]["latitude"]),
+    Longitude = tostring(LocationDetails["geoCoordinates"]["longitude"]),
+    City = tostring(LocationDetails["city"]),
+    Country = tostring(LocationDetails["countryOrRegion"])
+| project 
+    Identity,
+    Latitude,
+    Longitude,
+    City,
+    Country,
+    LoginCount,
+    friendly_label = strcat(Identity, " - ", City, ", ", Country)
